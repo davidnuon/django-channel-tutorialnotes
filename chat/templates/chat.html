@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8">
+      <title>What is this</title>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.8/semantic.min.css">
+      <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>	
+      <script   src="https://code.jquery.com/jquery-1.12.3.min.js"   integrity="sha256-aaODHAgvwQW1bFOGXMeX+pC4PZIPsvn2h1sArYOhgXQ="   crossorigin="anonymous"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.8/semantic.min.js"></script>
+      <style>
+         .message-column {
+         background: #dedede;
+         }
+         .message-box {
+         height: 500px;
+         overflow-y:auto;
+         padding: 20px;
+         background: #dedede;
+         }
+         .message-input {
+         display: block;
+         width:100%;
+         border-top: #dedede 1px solid;
+         margin-top: 10px;
+         padding-top: 10px;
+         }
+         .chat {
+         margin-top: 30px !important;
+         background: #eee;
+         }
+      </style>
+   </head>
+   <body ng-app="django-chat" ng-controller="ChatCtrl">
+      <div class="ui two column doubling grid container chat">
+         <div class="column message-column">
+            <div class="message-box">
+               <div class="ui cards">
+                  <div class="card" style="width:100%" ng-repeat="note in notes">
+                     <div class="content">
+                     	<div class="header">
+                     		{% templatetag openvariable %} note.name {% templatetag closevariable %}
+                     	</div>
+                        <div class="description">
+                           {% templatetag openvariable %} note.message {% templatetag closevariable %}
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            <div ng-enter="submit()" class="ui input message-input">
+               <input type="text" ng-model="input_box">
+            </div>
+         </div>
+         <div class="column">
+            <h1>{% templatetag openvariable %} name {% templatetag closevariable %}, welcome to #LCT</h1>
+            <img style="width: 100%;" src="http://vignette2.wikia.nocookie.net/lapis/images/2/2b/Cowboy.jpg/revision/latest?cb=20141031124607" alt="The Sherrif is in Town">
+            <p style="font-size:20px">
+            	No comments, just do.
+            </p>
+         </div>
+      </div>
+      <script>
+         angular.module('django-chat', [])
+         	 .constant('DummyNames', ["Devin","Nomlanga","Heather","Irene","Celeste","Edward","Jonas","Michelle","Regina","Burton","Paloma","Darrel","Burton","Clayton","Justina","Nero","Quynn","Reuben","Harrison","Teegan","Bruce","Barclay","Timon","Charles","Echo","Asher","Odysseus","Eve","Ursula","Amal","Alea","Tarik","Claire","Dana","Willa","Nola","Yoko","Aristotle","Dexter","Norman","Alyssa","Darryl","Maryam","Samuel","Margaret","Melinda","Oren","Harrison","Maryam","Cooper","Uta","Hilel","Gavin","Cynthia","Raven","Shelly","Audra","Gavin","Leroy","Ezra","Brynne","Kim","Angela","Winifred","Serena","Amanda","Jessica","Macon","Denise","Keelie","Drew","Iris","Slade","Florence","Rashad","Melyssa","Grady","Britanney","Keely","Hilary","Sonya","Frances","Chancellor","Veronica","Farrah","Knox","Ferdinand","Kellie","Caesar","Sharon","Camille","Quemby","TaShya","Marsden","Rhona","Wyatt","Daryl","Cleo","Theodore","Luke"])
+             .directive('ngEnter', function() {
+                 return function(scope, element, attrs) {
+                     element.bind("keydown keypress", function(event) {
+                         if (event.which === 13) {
+                             scope.$apply(function() {
+                                 scope.$eval(attrs.ngEnter);
+                             });
+
+                             event.preventDefault();
+                         }
+                     });
+                 };
+             })
+             .controller('ChatCtrl', function($scope, DummyNames) {
+                 $scope.notes = [];
+                 $scope.name = DummyNames[Math.floor( Math.random() * DummyNames.length)] + ' ' + String(Math.floor( Math.random() * 1000) );
+
+                 console.log($scope.name);
+
+                 $scope.submit = function() {
+                 	 var message = JSON.stringify({
+                     	message: $scope.input_box,
+                     	name: $scope.name,
+                     });
+                     socket.send(message);
+                     $scope.input_box = "";
+                 }
+
+
+                 var socket = new WebSocket("ws://dn-verzauberung.local:8000/chat/foo");
+                 window.THE_SOCKET = socket;
+                 socket.onmessage = function(e) {
+                 	 var data = JSON.parse(e.data);
+                 	 console.log(data);
+                     $scope.notes[$scope.notes.length] = data;
+
+                     $scope.$digest();
+
+                     $('.message-box')
+                         .animate({
+                             scrollTop: $('.message-box').prop("scrollHeight")
+                         }, 1000);
+                 }
+
+                 socket.onopen = function() {
+                   	 var message = JSON.stringify({
+                     	message: "Hello World",
+                     	name: $scope.name,
+                     });
+                     socket.send(message);   
+                 }
+
+             });
+      </script>
+   </body>
+</html>
